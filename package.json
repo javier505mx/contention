@@ -1,0 +1,32 @@
+{
+  "name": "contention",
+  "version": "1.0.0",
+  "description": "Contention browser game",
+  "private": true,
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "next build",
+    "start": "NODE_ENV=production tsx server.ts",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@mantine/core": "^7.14.4",
+    "@mantine/hooks": "^7.14.4",
+    "@tabler/icons-react": "^3.23.0",
+    "js-yaml": "^4.1.0",
+    "next": "^14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "xstate": "^5.18.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
