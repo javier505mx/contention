@@ -12,8 +12,10 @@ export default function GamePage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<PublicGameState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pendingState, setPendingState] = useState<PublicGameState | null>(null);
+  const [showStealFailed, setShowStealFailed] = useState(false);
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stealFailedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingStateRef = useRef<PublicGameState | null>(null);
   
   const { playError, playCorrect, playVictory, unlockAudio, audioUnlocked } = useGameSounds();
 
@@ -36,7 +38,14 @@ export default function GamePage() {
       
       // If we're currently delaying for 3rd strike, buffer this state update
       if (delayTimeoutRef.current && state.phase.startsWith('stealPhase')) {
-        setPendingState(state);
+        pendingStateRef.current = state;
+        return;
+      }
+      
+      // If the steal-failed overlay is showing, buffer playOrPass so the X
+      // animation plays in full before the board updates.
+      if (stealFailedTimeoutRef.current && state.phase === 'playOrPass') {
+        pendingStateRef.current = state;
         return;
       }
       
@@ -59,19 +68,39 @@ export default function GamePage() {
       if (strikeCount === 3) {
         delayTimeoutRef.current = setTimeout(() => {
           // Apply any pending state update after the delay
-          if (pendingState) {
-            setGameState(pendingState);
-            setPendingState(null);
+          if (pendingStateRef.current) {
+            setGameState(pendingStateRef.current);
+            pendingStateRef.current = null;
           }
           delayTimeoutRef.current = null;
         }, 2500);
       }
     });
 
+    socketInstance.on(SOCKET_EVENTS.GAME_STEAL_FAILED, () => {
+      console.log('Steal failed!');
+      // Play error sound and show the X overlay
+      playError();
+      setShowStealFailed(true);
+      
+      // Auto-dismiss after 2.5 seconds and apply any buffered state
+      stealFailedTimeoutRef.current = setTimeout(() => {
+        setShowStealFailed(false);
+        if (pendingStateRef.current) {
+          setGameState(pendingStateRef.current);
+          pendingStateRef.current = null;
+        }
+        stealFailedTimeoutRef.current = null;
+      }, 2500);
+    });
+
     return () => {
       socketInstance.disconnect();
       if (delayTimeoutRef.current) {
         clearTimeout(delayTimeoutRef.current);
+      }
+      if (stealFailedTimeoutRef.current) {
+        clearTimeout(stealFailedTimeoutRef.current);
       }
     };
   }, [playError, playCorrect]);
@@ -134,5 +163,5 @@ export default function GamePage() {
     );
   }
 
-  return <GameBoard gameState={gameState} onPlayVictory={playVictory} />;
+  return <GameBoard gameState={gameState} onPlayVictory={playVictory} showStealFailed={showStealFailed} />;
 }

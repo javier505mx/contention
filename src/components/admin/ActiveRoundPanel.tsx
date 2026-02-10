@@ -30,7 +30,7 @@ export function ActiveRoundPanel({ gameState, onAction }: ActiveRoundPanelProps)
       <Card shadow="sm" padding="lg" withBorder>
         <Group justify="space-between" mb="md">
           <div>
-            <Title order={3}>{currentQuestion.question}</Title>
+            <Title order={1}>QUESTION: {currentQuestion.question.toUpperCase()}</Title>
             {controllingTeam && (
               <Text size="lg" c="blue" fw={500}>
                 {controllingTeam.name} is playing

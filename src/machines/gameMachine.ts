@@ -63,6 +63,7 @@ export const gameMachine = setup({
         faceOffData: null,
         playOrPassTeamIndex: null,
         winner: null,
+        roundOutcome: null,
       };
     }),
     
@@ -73,6 +74,7 @@ export const gameMachine = setup({
       faceOffData: null,
       playOrPassTeamIndex: null,
       controllingTeamIndex: null,
+      roundOutcome: null,
     }),
     
     recordFirstBuzz: assign(({ context, event }) => {
@@ -227,6 +229,24 @@ export const gameMachine = setup({
       return { teams };
     }),
     
+    setOutcomeStealSuccess: assign({ roundOutcome: 'stealSuccess' as const }),
+    
+    setOutcomeStealFailed: assign({ roundOutcome: 'stealFailed' as const }),
+    
+    revealNextRemaining: assign(({ context }) => {
+      const currentQuestion = context.selectedQuestions[context.currentQuestionIndex];
+      // Find the first unrevealed answer by index order
+      for (let i = 0; i < currentQuestion.responses.length; i++) {
+        if (!context.revealedAnswers.includes(i)) {
+          return {
+            revealedAnswers: [...context.revealedAnswers, i],
+            // Don't add to roundPot - remaining reveals are just for display
+          };
+        }
+      }
+      return {};
+    }),
+    
     determineWinner: assign(({ context }) => {
       const winningTeamIndex = context.teams[0].score >= context.teams[1].score ? 0 : 1;
       
@@ -251,6 +271,7 @@ export const gameMachine = setup({
       faceOffData: null,
       playOrPassTeamIndex: null,
       winner: null,
+      roundOutcome: null,
     }),
   },
 }).createMachine({
@@ -272,6 +293,7 @@ export const gameMachine = setup({
     faceOffData: null,
     playOrPassTeamIndex: null,
     winner: null,
+    roundOutcome: null,
   },
   states: {
     idle: {
@@ -417,14 +439,31 @@ export const gameMachine = setup({
           always: [
             {
               guard: ({ event }) => event.type === 'STEAL_ANSWER' && event.answerIndex !== null,
-              target: '#familyFeud.awardPoints.stealSuccess',
-              actions: 'revealStealAnswer',
+              target: '#familyFeud.revealRemaining',
+              actions: ['revealStealAnswer', 'setOutcomeStealSuccess'],
             },
             {
-              target: '#familyFeud.awardPoints.stealFailed',
+              target: '#familyFeud.revealRemaining',
+              actions: 'setOutcomeStealFailed',
             },
           ],
         },
+      },
+    },
+    revealRemaining: {
+      on: {
+        REVEAL_NEXT_REMAINING: {
+          actions: 'revealNextRemaining',
+        },
+        CONTINUE_AWARD: [
+          {
+            guard: ({ context }) => context.roundOutcome === 'stealSuccess',
+            target: 'awardPoints.stealSuccess',
+          },
+          {
+            target: 'awardPoints.stealFailed',
+          },
+        ],
       },
     },
     awardPoints: {

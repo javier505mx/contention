@@ -57,6 +57,7 @@ function getPublicState(context: GameContext): PublicGameState {
     strikes: context.strikes,
     controllingTeamIndex: context.controllingTeamIndex,
     winner: context.winner,
+    roundOutcome: context.roundOutcome,
   };
 }
 
@@ -176,6 +177,21 @@ app.prepare().then(async () => {
       console.log('Admin action:', event);
       
       if (gameActor) {
+        // Capture state before sending event (needed for REVEAL_NEXT_REMAINING diff)
+        const prevRevealedAnswers = new Set(gameActor.getSnapshot().context.revealedAnswers);
+        const prevState = stateValueToString(gameActor.getSnapshot().value);
+        
+        // Face-off steal failed: opponent gave a wrong answer during face-off
+        // Emit BEFORE state machine transitions so the overlay appears on the
+        // game page before the board updates to playOrPass.
+        if (
+          prevState === 'faceOff.opponentEvaluating' &&
+          event.type === 'EVALUATE' &&
+          event.answerIndex === null
+        ) {
+          io.emit(SOCKET_EVENTS.GAME_STEAL_FAILED);
+        }
+        
         gameActor.send(event);
         
         // Check for special events that trigger animations
@@ -193,6 +209,25 @@ app.prepare().then(async () => {
               value: answer.value,
             });
           }
+        }
+        
+        // Emit reveal event for remaining answer reveals
+        if (event.type === 'REVEAL_NEXT_REMAINING') {
+          const newlyRevealed = context.revealedAnswers.find(idx => !prevRevealedAnswers.has(idx));
+          if (newlyRevealed !== undefined) {
+            const currentQuestion = context.selectedQuestions[context.currentQuestionIndex];
+            const answer = currentQuestion.responses[newlyRevealed];
+            io.emit(SOCKET_EVENTS.GAME_REVEAL, {
+              index: newlyRevealed,
+              answer: answer.answer,
+              value: answer.value,
+            });
+          }
+        }
+        
+        // Emit steal failed event for X overlay
+        if (event.type === 'STEAL_ANSWER' && event.answerIndex === null) {
+          io.emit(SOCKET_EVENTS.GAME_STEAL_FAILED);
         }
         
         // Emit strike event for animations

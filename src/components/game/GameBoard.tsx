@@ -7,16 +7,18 @@ import { AnswerPanel } from './AnswerPanel';
 import { StrikeDisplay } from './StrikeDisplay';
 import { VictoryOverlay } from './VictoryOverlay';
 import { RoundWinnerOverlay } from './RoundWinnerOverlay';
+import { FailedStealOverlay } from './FailedStealOverlay';
 import type { PublicGameState } from '@/types/game';
 
 interface GameBoardProps {
   gameState: PublicGameState;
   onPlayVictory: () => void;
+  showStealFailed?: boolean;
 }
 
-export function GameBoard({ gameState, onPlayVictory }: GameBoardProps) {
-  // Show welcome screen if no game is active
-  if (!gameState.currentQuestion) {
+export function GameBoard({ gameState, onPlayVictory, showStealFailed }: GameBoardProps) {
+  // Show welcome screen if no game is active or game hasn't started round yet
+  if (!gameState.currentQuestion || gameState.phase === 'gameStart') {
     return (
       <Container size="xl" py="xl">
         <Stack gap="xl" align="center" style={{ minHeight: '80vh', justifyContent: 'center' }}>
@@ -62,17 +64,31 @@ export function GameBoard({ gameState, onPlayVictory }: GameBoardProps) {
           {/* Center: Answer Board */}
           <Grid.Col span={6}>
             <Stack gap="md">
-              <Title 
-                order={2} 
-                style={{ 
-                  textAlign: 'center',
-                  fontSize: '2.5rem',
-                  color: '#fff',
-                  textShadow: '0 0 20px rgba(255, 255, 255, 0.5)',
-                }}
-              >
-                {gameState.currentQuestion.question}
-              </Title>
+              {gameState.phase === 'roundStart' ? (
+                <Title 
+                  order={2} 
+                  style={{ 
+                    textAlign: 'center',
+                    fontSize: '3rem',
+                    color: '#ffd700',
+                    textShadow: '0 0 30px rgba(255, 215, 0, 0.6)',
+                    animation: 'getReadyPulse 2s ease-in-out infinite',
+                  }}
+                >
+                  Get Ready!
+                </Title>
+              ) : (
+                <Title 
+                  order={1} 
+                  style={{ 
+                    textAlign: 'center',
+                    color: '#fff',
+                    textShadow: '0 0 20px rgba(255, 255, 255, 0.5)',
+                  }}
+                >
+                  {gameState.currentQuestion.question.toUpperCase()}
+                </Title>
+              )}
               <AnswerPanel
                 totalAnswers={gameState.currentQuestion.totalAnswers}
                 revealedAnswers={gameState.revealedAnswers}
@@ -109,6 +125,9 @@ export function GameBoard({ gameState, onPlayVictory }: GameBoardProps) {
         );
       })()}
 
+      {/* Failed Steal Overlay */}
+      {showStealFailed && <FailedStealOverlay />}
+
       {/* Victory Overlay */}
       {gameState.phase === 'gameOver' && gameState.winner !== null && (
         <VictoryOverlay
@@ -116,6 +135,13 @@ export function GameBoard({ gameState, onPlayVictory }: GameBoardProps) {
           onPlayVictory={onPlayVictory}
         />
       )}
+
+      <style>{`
+        @keyframes getReadyPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.05); }
+        }
+      `}</style>
     </Container>
   );
 }

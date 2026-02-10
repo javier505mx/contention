@@ -14,4 +14,5 @@ export const SOCKET_EVENTS = {
   GAME_STATE: 'game:state',
   GAME_REVEAL: 'game:reveal',
   GAME_STRIKE: 'game:strike',
+  GAME_STEAL_FAILED: 'game:stealFailed',
 } as const;
