@@ -1,2 +1,5 @@
 node_modules
-questions/*
+questions
+.next
+.env
+out

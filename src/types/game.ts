@@ -39,6 +39,7 @@ export type GamePhase =
   | 'activeRound.checkGuess'
   | 'stealPhase.awaitingSteal'
   | 'stealPhase.stealResolved'
+  | 'revealRemaining'
   | 'awardPoints'
   | 'awardPoints.controllingWins'
   | 'awardPoints.stealSuccess'
@@ -62,6 +63,7 @@ export interface PublicGameState {
   strikes: number;
   controllingTeamIndex: number | null;
   winner: number | null; // team index of winner
+  roundOutcome: 'stealSuccess' | 'stealFailed' | null;
 }
 
 // Admin game state (includes everything public + private data)
@@ -114,6 +116,8 @@ export type GameEvent =
   | { type: 'PASS' }
   | { type: 'SUBMIT_ANSWER'; answerIndex: number | null } // null for wrong answer/strike
   | { type: 'STEAL_ANSWER'; answerIndex: number | null }
+  | { type: 'REVEAL_NEXT_REMAINING' }
+  | { type: 'CONTINUE_AWARD' }
   | { type: 'NEXT_ROUND' }
   | { type: 'NEW_GAME' };
 
@@ -134,4 +138,5 @@ export interface GameContext {
   } | null;
   playOrPassTeamIndex: number | null;
   winner: number | null;
+  roundOutcome: 'stealSuccess' | 'stealFailed' | null;
 }

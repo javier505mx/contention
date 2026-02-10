@@ -65,9 +65,9 @@ export function GameControls({ gameState, onAction }: GameControlsProps) {
         <Card shadow="sm" padding="lg" withBorder>
           <Title order={2} mb="md">Round {gameState.currentQuestionIndex + 1}</Title>
           {gameState.currentQuestionFull && (
-            <Text size="lg" mb="md">
-              <strong>Question:</strong> {gameState.currentQuestionFull.question}
-            </Text>
+            <Title order={1} mb="md">
+              <strong>QUESTION:</strong> {gameState.currentQuestionFull.question.toUpperCase()}
+            </Title>
           )}
           <Button 
             onClick={() => onAction({ type: 'NEXT' })} 
@@ -118,6 +118,90 @@ export function GameControls({ gameState, onAction }: GameControlsProps) {
       <Stack gap="md">
         <ScoreBoard />
         <StealPanel gameState={gameState} onAction={onAction} />
+      </Stack>
+    );
+  }
+
+  // Reveal Remaining phase
+  if (gameState.phase === 'revealRemaining') {
+    const totalAnswers = gameState.currentQuestionFull?.responses.length ?? 0;
+    const revealedCount = gameState.revealedAnswers.length;
+    const remainingCount = totalAnswers - revealedCount;
+    const allRevealed = remainingCount === 0;
+
+    const isStealSuccess = gameState.roundOutcome === 'stealSuccess';
+    const stealingTeamIndex = gameState.controllingTeamIndex === 0 ? 1 : 0;
+    const stealingTeamName = gameState.teams[stealingTeamIndex]?.name ?? 'Opponent';
+    const controllingTeamName = gameState.controllingTeamIndex !== null
+      ? gameState.teams[gameState.controllingTeamIndex].name
+      : '';
+
+    return (
+      <Stack gap="md">
+        <ScoreBoard />
+        <Card shadow="sm" padding="lg" withBorder>
+          <Title order={2} mb="md">Reveal Remaining Answers</Title>
+          {isStealSuccess ? (
+            <Text size="lg" mb="md" c="green">
+              <strong>{stealingTeamName}</strong> stole successfully!
+            </Text>
+          ) : (
+            <Text size="lg" mb="md" c="red">
+              <strong>{stealingTeamName}</strong> failed to steal!{' '}
+              <strong>{controllingTeamName}</strong> keeps the points.
+            </Text>
+          )}
+          
+          <Text size="md" mb="md" c="dimmed">
+            {allRevealed 
+              ? 'All answers revealed!' 
+              : `${remainingCount} answer${remainingCount !== 1 ? 's' : ''} remaining`}
+          </Text>
+
+          <Group gap="md">
+            <Button
+              onClick={() => onAction({ type: 'REVEAL_NEXT_REMAINING' })}
+              size="lg"
+              color="blue"
+              disabled={allRevealed}
+              style={{ flex: 1 }}
+            >
+              Reveal Next Answer
+            </Button>
+            <Button
+              onClick={() => onAction({ type: 'CONTINUE_AWARD' })}
+              size="lg"
+              color="green"
+              style={{ flex: 1 }}
+            >
+              Continue
+            </Button>
+          </Group>
+
+          {gameState.currentQuestionFull && (
+            <Card shadow="xs" padding="sm" withBorder mt="md">
+              <Text size="sm" c="dimmed" mb="xs">All answers:</Text>
+              {gameState.currentQuestionFull.responses.map((response, idx) => {
+                const isRevealed = gameState.revealedAnswers.some(a => a.index === idx);
+                return (
+                  <Group key={idx} gap="sm" mb={4}>
+                    <Badge 
+                      color={isRevealed ? 'green' : 'gray'} 
+                      variant={isRevealed ? 'filled' : 'outline'}
+                      size="sm"
+                    >
+                      {idx + 1}
+                    </Badge>
+                    <Text size="sm" fw={isRevealed ? 700 : 400}>
+                      {response.answer} ({response.value})
+                    </Text>
+                    {isRevealed && <Text size="xs" c="green">✓</Text>}
+                  </Group>
+                );
+              })}
+            </Card>
+          )}
+        </Card>
       </Stack>
     );
   }

@@ -28,12 +28,12 @@ export function FaceOffPanel({ gameState, onAction }: FaceOffPanelProps) {
     <Stack gap="md">
       <Title order={2}>Face-Off</Title>
       <Card shadow="sm" padding="lg" withBorder>
-        <Title order={3} mb="md">{currentQuestion.question}</Title>
+        <Title order={1} mb="md">QUESTION: {currentQuestion.question.toUpperCase()}</Title>
         
         {isAwaitingBuzz && (
           <>
             <Text mb="md">Which team buzzed in first?</Text>
-            <Group>
+            <Group grow>
               <Button onClick={() => handleBuzzIn(0)} size="lg">
                 {gameState.teams[0].name}
               </Button>
